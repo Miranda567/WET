@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Foxnews</title>
+    <style>
+        .article {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 10px;
+        }
+        .article img {
+            max-width: 100%;
+            height: auto;
+        }
+        .comment {
+            border-top: 1px solid #ccc;
+            padding: 10px 0;
+        }
+        #comments {
+            margin-top: 20px;
+        }
+        #commentForm {
+            margin-top: 20px;
+        }
+        .share-buttons {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>News Article</h2>
+<div id="article" class="article"></div>
+
+<div id="commentsSection">
+    <h4>Comments:</h4>
+    <div id="comments"></div>
+    
+    <h5>Add a Comment:</h5>
+    <form id="commentForm">
+        <textarea id="commentContent" placeholder="Write your comment here..." required></textarea><br>
+        <button type="submit">Submit Comment</button>
+    </form>
+</div>
+
+<div class="share-buttons">
+    <h4>Share this Article:</h4>
+    <a href="#" id="facebookShare">Share on Facebook</a><br>
+    <a href="#" id="twitterShare">Share on Twitter</a><br>
+    <a href="#" id="instagramShare">Share on Instagram</a>
+</div>
+
+<!-- Firebase Configuration -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script>
+    // Initialize Firebase
+    var firebaseConfig = {
+        apiKey: "AIzaSyAtVvPjdsj84mWqaG4-7SyjbljCnslZ1SM",
+        authDomain: "hendaa-1.firebaseapp.com",
+        databaseURL: "https://hendaa-1-default-rtdb.firebaseio.com",
+        projectId: "hendaa-1",
+        storageBucket: "hendaa-1.appspot.com",
+        messagingSenderId: "831134776479",
+        appId: "1:831134776479:web:56cd7098fc69cd70a376aa"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    var db = firebase.firestore();
+
+    // Get the post ID from the URL
+    var urlParams = new URLSearchParams(window.location.search);
+    var postId = urlParams.get('id');
+
+    // Fetch the article and display it
+    function fetchArticle() {
+        db.collection("articles").doc(postId).get().then(function(doc) {
+            if (doc.exists) {
+                var post = doc.data();
+                var articleDiv = document.getElementById("article");
+                articleDiv.innerHTML = `
+                    <h3>${post.title}</h3>
+                    <p>${post.content}</p>
+                    ${post.featuredImage ? `<img src="${post.featuredImage}" alt="Image">` : ''}
+                    <p>Author: ${post.author}</p>
+                    <p>Categories: ${post.categories.join(', ')}</p>
+                    <p>Tags: ${post.tags.join(', ')}</p>
+                    <p>Published on: ${post.publishDate ? new Date(post.publishDate).toLocaleDateString() : 'Draft'}</p>
+                `;
+
+                // Update share buttons with the correct URL
+                const articleURL = window.location.href;
+                document.getElementById("facebookShare").href = `https://www.facebook.com/sharer/sharer.php?u=${articleURL}`;
+                document.getElementById("twitterShare").href = `https://twitter.com/intent/tweet?url=${articleURL}`;
+                document.getElementById("instagramShare").href = `https://www.instagram.com/?url=${articleURL}`;
+            } else {
+                document.getElementById("article").innerHTML = "Article not found.";
+            }
+        });
+    }
+
+    // Fetch comments and display them
+    function fetchComments() {
+        db.collection("articles").doc(postId).collection("comments").orderBy("timestamp", "desc").onSnapshot(function(querySnapshot) {
+            var commentsDiv = document.getElementById("comments");
+            commentsDiv.innerHTML = "";
+            querySnapshot.forEach(function(doc) {
+                var comment = doc.data();
+                if (comment.approved) { // Only show approved comments
+                    var commentDiv = document.createElement("div");
+                    commentDiv.classList.add("comment");
+                    commentDiv.innerHTML = `
+                        <p><strong>${comment.author}</strong>: ${comment.content}</p>
+                        <p><small>${new Date(comment.timestamp.seconds * 1000).toLocaleString()}</small></p>
+                    `;
+                    commentsDiv.appendChild(commentDiv);
+                }
+            });
+        });
+    }
+
+    // Add a comment to the article
+    document.getElementById("commentForm").addEventListener("submit", function(event) {
+        event.preventDefault();
+        var commentContent = document.getElementById("commentContent").value.trim();
+        if (!commentContent) return alert('Comment cannot be empty.');
+
+        var comment = {
+            author: 'Guest', // Default author as 'Guest'
+            content: commentContent,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            approved: true, // Automatically approve comments
+        };
+
+        db.collection("articles").doc(postId).collection("comments").add(comment)
+        .then(function() {
+            console.log("Comment added successfully");
+            document.getElementById("commentContent").value = ''; // Clear the input field
+            fetchComments(); // Refresh comments
+        })
+        .catch(function(error) {
+            console.error("Error adding comment: ", error);
+        });
+    });
+
+    // Initialize the article and comments on page load
+    fetchArticle();
+    fetchComments();
+</script>
+</body>
+</html>
