@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fox News - Trump Assassination Attempt</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Default Open Graph Meta Tags (Will be updated dynamically) -->
+    <meta property="og:title" content="Loading...">
+    <meta property="og:description" content="Loading...">
+    <meta property="og:image" content="">
+    <meta property="og:url" content="">
+    <meta property="og:type" content="article">
+    
+    <!-- Twitter Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Loading...">
+    <meta name="twitter:description" content="Loading...">
+    <meta name="twitter:image" content="">
+    
+    <style>
+        body {
+            font-family: 'Roboto Condensed', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .navbar {
+            background-color: #002868;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .article-title {
+            font-size: 28px;
+            color: #111;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .image-container {
+            text-align: center;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .article-meta {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .social-icons {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .social-icons a img {
+            width: 30px;
+            height: 30px;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">FOX NEWS</div>
+    
+    <div class="container">
+        <div id="article"></div>
+
+        <div class="social-icons">
+            <a href="#" id="facebookShare"><img src="facebook.png" alt="Facebook"></a>
+            <a href="#" id="twitterShare"><img src="twitter.png" alt="Twitter"></a>
+            <a href="#" id="instagramShare"><img src="instagram.png" alt="Instagram"></a>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script>
+        // Firebase Configuration
+        var firebaseConfig = {
+            apiKey: "AIzaSyAtVvPjdsj84mWqaG4-7SyjbljCnslZ1SM",
+            authDomain: "hendaa-1.firebaseapp.com",
+            projectId: "hendaa-1",
+            storageBucket: "hendaa-1.appspot.com",
+            messagingSenderId: "831134776479",
+            appId: "1:831134776479:web:56cd7098fc69cd70a376aa"
+        };
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.firestore();
+
+        // Get Post ID from URL
+        var urlParams = new URLSearchParams(window.location.search);
+        var postId = urlParams.get('id');
+
+        function fetchArticle() {
+            db.collection("articles").doc(postId).get().then(function(doc) {
+                if (doc.exists) {
+                    var post = doc.data();
+                    
+                    // Update Page Content
+                    document.getElementById("article").innerHTML = `
+                        <div class="article-title">${post.title}</div>
+                        <div class="image-container">
+                            ${post.featuredImage ? `<img src="${post.featuredImage}" alt="${post.title}">` : ''}
+                        </div>
+                        <div class="article-meta">
+                            By <span style="font-weight:bold;">${post.author}</span> | Fox News <br>
+                            <span>${post.publishedDate || 'Unknown Date'}</span>
+                        </div>
+                        <div class="content">${post.content}</div>
+                    `;
+
+                    // Update Meta Tags
+                    document.querySelector('meta[property="og:title"]').setAttribute("content", post.title);
+                    document.querySelector('meta[property="og:description"]').setAttribute("content", post.content.substring(0, 150) + "...");
+                    document.querySelector('meta[property="og:image"]').setAttribute("content", post.featuredImage || '');
+                    document.querySelector('meta[property="og:url"]').setAttribute("content", window.location.href);
+                    
+                    document.querySelector('meta[name="twitter:title"]').setAttribute("content", post.title);
+                    document.querySelector('meta[name="twitter:description"]').setAttribute("content", post.content.substring(0, 150) + "...");
+                    document.querySelector('meta[name="twitter:image"]').setAttribute("content", post.featuredImage || '');
+
+                    // Update Social Media Share Links
+                    document.getElementById("facebookShare").href = `https://www.facebook.com/sharer/sharer.php?u=${window.location.href}`;
+                    document.getElementById("twitterShare").href = `https://twitter.com/intent/tweet?url=${window.location.href}&text=${post.title}`;
+                    document.getElementById("instagramShare").href = `https://www.instagram.com/?url=${window.location.href}`;
+                } else {
+                    document.getElementById("article").innerHTML = "Article not found.";
+                }
+            }).catch(function(error) {
+                console.error("Error fetching article:", error);
+            });
+        }
+
+        // Load Article
+        fetchArticle();
+    </script>
+</body>
+</html>
